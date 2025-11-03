@@ -53,8 +53,8 @@ async function fetchData() {
       likeBtn.addEventListener("click", () => {
         let updatedLikes =
           JSON.parse(localStorage.getItem("likedProducts")) || [];
-
         const alreadyLiked = updatedLikes.find((p) => p.id === item.id);
+
         if (alreadyLiked) {
           updatedLikes = updatedLikes.filter((p) => p.id !== item.id);
           likeBtn.classList.replace("fa-solid", "fa-regular");
@@ -64,7 +64,6 @@ async function fetchData() {
           likeBtn.classList.replace("fa-regular", "fa-solid");
           likeBtn.style.color = "#ff0000";
         }
-
         localStorage.setItem("likedProducts", JSON.stringify(updatedLikes));
       });
 
@@ -84,29 +83,31 @@ async function fetchData() {
 
 function addToCart(productId) {
   if (!productId) return;
-  productId = productId.toString();
 
   let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-  const existingProductIndex = cart.findIndex(
-    (item) => item.id.toString() === productId
+  const product = data.find(
+    (item) => item.id.toString() === productId.toString()
   );
 
-  if (existingProductIndex !== -1) {
-    cart[existingProductIndex].quantity =
-      (cart[existingProductIndex].quantity || 1) + 1;
+  if (!product) {
+    alert("Mahsulot topilmadi");
+    return;
+  }
+
+  const existingIndex = cart.findIndex(
+    (item) => item.id.toString() === productId.toString()
+  );
+
+  if (existingIndex !== -1) {
+    cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + 1;
+    alert("Mahsulot savatchada allaqachon bor, soni oshirildi");
   } else {
-    const product = data.find((item) => item.id.toString() === productId);
-    if (!product) {
-      console.error("Mahsulot topilmadi, id:", productId);
-      return;
-    }
     cart.push({ ...product, quantity: 1 });
+    alert("Mahsulot savatchaga qo'shildi");
   }
 
   localStorage.setItem("cart", JSON.stringify(cart));
   renderCart();
-  alert("Mahsulot savatchaga qo'shildi!");
 }
 
 function renderCart() {
@@ -122,47 +123,43 @@ function renderCart() {
     return;
   }
 
-  let cartItemsHTML = cart
+  const cartItemsHTML = cart
     .map((item) => {
       const title = item.title || item.name || "Noma'lum mahsulot";
-      const price = Number(item.total) * (item.quantity || 1);
-      const formattedPrice = isNaN(price)
-        ? "Narx yo'q"
-        : price.toLocaleString() + " сум";
+      const price = Number(item.total) || 0;
+      const quantity = item.quantity || 1;
+      const img = item.img || "https://via.placeholder.com/50";
+
+      const totalPrice = (price * quantity).toLocaleString() + " сум";
 
       return `
-        <div class="flex items-center border-b py-3">
-          <img src="${
-            item.img
-          }" alt="${title}" class="w-16 h-16 object-cover rounded mr-4"/>
-          <div class="flex-grow">
-            <h4 class="font-semibold text-gray-800">${title}</h4>
-            <p class="text-sm text-gray-500">Soni: ${item.quantity || 1}</p>
-          </div>
-          <p class="font-bold text-blue-600">${formattedPrice}</p>
+      <div class="flex items-center border-b py-3">
+        <img src="${img}" alt="${title}" class="w-16 h-16 object-cover rounded mr-4"/>
+        <div class="flex-grow">
+          <h4 class="font-semibold text-gray-800">${title}</h4>
+          <p class="text-sm text-gray-500">Soni: ${quantity}</p>
         </div>
-      `;
+        <p class="font-bold text-blue-600">${totalPrice}</p>
+      </div>
+    `;
     })
     .join("");
 
   const totalAmount = cart.reduce(
-    (sum, item) => sum + Number(item.total || 0) * (item.quantity || 1),
+    (sum, item) => sum + (Number(item.total) || 0) * (item.quantity || 1),
     0
   );
   const formattedTotal = totalAmount.toLocaleString() + " сум";
 
   cartBox.innerHTML = `
     <h2 class="text-3xl font-bold mb-6 text-gray-800">🛒 Savatcha (Jami ${cart.length} tur)</h2>
-    <div class="space-y-4">
-      ${cartItemsHTML}
-    </div>
+    <div class="space-y-4">${cartItemsHTML}</div>
     <div class="mt-6 pt-4 border-t-2 border-blue-100 flex justify-between items-center">
       <p class="text-xl font-bold">Umumiy narx:</p>
       <p class="text-2xl font-extrabold text-blue-700">${formattedTotal}</p>
     </div>
   `;
 }
-
 fetchData().then(() => {
   renderCart();
 });
